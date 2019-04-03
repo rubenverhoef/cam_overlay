@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <X11/Xlib.h>
+#include <memory.h>
 
 #include "../common.h"
 
@@ -24,8 +26,8 @@ extern NativeWindowType init_window(STATE_T *state, int display_unused, int laye
     log_verbose("RootWindow");
     rootWindow = RootWindow(display, screen);
 
-    int width = 1280;
-    int height = 480;
+    int width = 1024;
+    int height = 600;
 
     state->screen_width = width;
     state->screen_height = height;
@@ -57,6 +59,27 @@ extern NativeWindowType init_window(STATE_T *state, int display_unused, int laye
 
     XUndefineCursor(display, window);
     XMapRaised(display, window);
+
+    Atom wm_state = XInternAtom(display, "_NET_WM_STATE", False);
+    Atom fullscreen = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
+
+    XEvent xev;
+    memset(&xev, 0, sizeof(xev));
+    xev.type = ClientMessage;
+    xev.xclient.window = window;
+    xev.xclient.message_type = wm_state;
+    xev.xclient.format = 32;
+    xev.xclient.data.l[0] = 1;
+    xev.xclient.data.l[1] = fullscreen;
+    xev.xclient.data.l[2] = 0;
+
+    XMapWindow(display, window);
+
+    XSendEvent (display, DefaultRootWindow(display), False,
+                    SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+    long id = 25165866;
+    XRaiseWindow(display, id);
+
     XFlush(display);
 
     return window;
